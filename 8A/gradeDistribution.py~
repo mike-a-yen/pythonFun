@@ -1,0 +1,146 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mc
+import math
+import argparse
+import re
+from ConfigParser import SafeConfigParser
+ColorConverter = mc.ColorConverter()
+
+def CleanSection(section):
+    if isinstance(section,str):
+        return re.findall(r'\b\d+\b',section)[0]
+    else:
+        return section
+
+def GradeWarning(table,column,cut=30):
+    try:
+        table = table[table[column].str.contains('read only') == False]
+    except AttributeError:
+        table = table[1:]
+    return table[table[column].values.astype(float) < cut]
+
+parser = argparse.ArgumentParser(description='Create grade distribution from csv file')
+parser.add_argument('--file',type=str,
+                    help='The csv file that contains the grades of all students [REQUIRED]')
+parser.add_argument('--color',type=str,default='blue',
+                    help='The histogram color, [default] is blue')
+parser.add_argument('--title',type=str,
+                    help='The title to place at the top of the distribution')
+parser.add_argument('--section',type=int,
+                    help='The section number to create a distribution for,'+\
+                    '[default] is all sections')
+parser.add_argument('--bin_width',type=float,
+                    help='Set bin width of histogram, [default] maxScore/20.')
+args = parser.parse_args()
+input_csv = args.file
+color = args.color
+edge_color = ColorConverter.to_rgba(color)
+color = ColorConverter.to_rgba(color,alpha=0.8)
+title = args.title
+section = args.section
+bin_width = args.bin_width
+
+table = pd.read_csv(input_csv)
+table['Section']=table['Section'].apply(CleanSection)
+
+print '#'*75
+print 'Columns in Table'
+print '-'*75
+print '\n'.join(table.columns)
+print '-'*75
+print '#'*75
+
+column = raw_input('Enter Name of column you want a distribution of: ')
+
+outOf = table[column][0] # the total possible points for assignment
+if outOf == '(read only)': outOf = 100.
+grades = table[column][1:] # grades of all students
+
+if section != None:
+    print '#'*25
+    print 'Section',section
+    print '#'*25
+    grades = table[column][table['Section']==str(section)]
+
+# skip any NaN grades
+grades = grades[grades.notnull()]
+
+mean = np.mean(grades.values.astype(float))
+median = np.median(grades.values.astype(float))
+sigma = np.std(grades.values.astype(float))
+
+cut = mean - 2*sigma
+warning = GradeWarning(table,column,cut=cut)
+print '*'*75
+print '-'*75
+print 'Students with a score below %.1f'%cut
+print warning[['Student','ID']]
+print '-'*75
+print '*'*75
+
+# make histogram of grades
+if bin_width == None:
+    bin_width = outOf/20.
+
+bins = np.arange(0,outOf+bin_width,bin_width)
+fig, ax = plt.subplots(2,1,figsize=(8.5,11),tight_layout=True)
+ax[0].set_title(title, fontsize=20,
+                bbox=dict(facecolor='white',edgecolor='black',pad=10))
+n,bins,patches = ax[0].hist(grades.values.astype(float),bins,rwidth=0.8,histtype='bar',
+                            color=color,edgecolor=edge_color,linewidth=1.5)
+
+#sigma lines
+cut1,cut2 = 1,2
+ax[0].axvline(mean,color='r',linestyle='dashed',linewidth=2,alpha=0.75)
+ax[0].axvline(mean-cut1*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+ax[0].axvline(mean+cut1*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+ax[0].axvline(mean-cut2*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+ax[0].axvline(mean+cut2*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+ax[0].text(mean,1.13*max(n),'$Mean$',color='black',rotation=270)
+ax[0].text(mean-cut1*sigma,1.13*max(n),'$%.1f \sigma$'%cut1,color='black',rotation=270)
+ax[0].text(mean+cut1*sigma,1.13*max(n),'$%.1f \sigma$'%cut1,color='black',rotation=270)
+ax[0].text(mean-cut2*sigma,1.13*max(n),'$%.1f \sigma$'%cut2,color='black',rotation=270)
+ax[0].text(mean+cut2*sigma,1.13*max(n),'$%.1f \sigma$'%cut2,color='black',rotation=270)
+
+# stats box
+ax[0].text(bins[0]+bin_width,0.9*max(n),
+           'Mean: %.2f\nMedian: %.2f\nStd: %.2f'%(mean,median,sigma),
+           color='black',bbox=dict(facecolor='none',edgecolor='black'))
+ax[0].set_xticks(bins)
+ax[0].set_xlim(0,1.1*bins[-1])
+ax[0].set_ylim(0,1.2*max(n))
+ax[0].set_xlabel('Grade [Points]')
+ax[0].set_ylabel('Number of Students')
+
+# Make table of distribution
+columns = ('Score','Number of Students','Percentage','Cumulative Percentage')
+rows = ['%d-%d'%(l,l+bin_width) for l in bins[:-1]]
+data = [ [rows[i],int(num),
+          np.round(num/sum(n)*100,2),
+          np.round(sum(n[0:i+1])/sum(n)*100,2)]
+        for i,num in enumerate(n)]
+ax[1].set_frame_on(False)
+ax[1].axes.get_xaxis().set_visible(False)
+ax[1].axes.get_yaxis().set_visible(False)
+t=ax[1].table(cellText=data,
+              colLabels=columns,
+              rowLoc='right',colLoc='center',
+              loc='upper center')
+for i in xrange(len(columns)):
+    t.auto_set_column_width(i)
+
+message = 'This distribution was made by binning scores in %d point intervals. '\
+          'The lower limit of the bin is the minimum required score to be placed\n'\
+          'in that bin. For example, a score of %d is placed the the %d-%d bin not '\
+          'the 0-%d bin.'%(bin_width,bin_width,bin_width,2*bin_width,bin_width)
+fig.text(0.5,0.01,message,fontsize=8,color='black',ha='center',
+         bbox=dict(facecolor='gray',edgecolor='black'))
+plt.show()
+toSave = raw_input('Save figure? [y/n]')
+if toSave.lower() == 'y':
+    name = raw_input('Save as: ')
+    fig.savefig(name)
+plt.close('all')
+

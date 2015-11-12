@@ -1,0 +1,95 @@
+# make a tic tac toe game, 2 player, no computer ai
+# mark players as 1 or 2
+import numpy as np
+import aiTicTac
+
+def CheckWin():
+    for i in xrange(1,3): # loop over players
+        #check rows for win
+        for row in xrange(rows):
+            if (i==board[row,:]).all():
+                return i
+        #check cols for win
+        for col in xrange(cols):
+            if (i==board[:,col]).all():
+                return i
+        # check diagonals for win
+        # main diagonal
+        if (i==board.diagonal()).all():
+            return i
+        # need to flip board to check other diagonal np.fliplr(board)
+        if (i==np.fliplr(board).diagonal()).all():
+            return i
+    return 0
+
+def CheckMove(move):
+    if board[move[0],move[1]] != 0:
+        print "Spot has been taken by player %d" %board[move[0],move[1]]
+        return False
+    if move[0] > rows or move[0] < 0:
+        print "Not on the board!"
+        return False
+    if move[1] > cols or move[1] < 0:
+        print "Not on the board!"
+        return False
+
+    return True
+
+def DrawBoard():
+    print "*********"
+    for row in xrange(rows):
+        print "|",board[row,0],board[row,1],board[row,2],"|"
+    print "**********"
+
+#make board 3x3
+rows = 3
+cols = 3
+board = np.zeros([rows, cols],dtype=np.int)
+
+nTurns = rows*cols
+winner = 0
+turn = 0
+
+print "Would you like to play against the computer?"
+aiOn = raw_input()
+if aiOn == "Yes":
+    print "AI turned on"
+    ai = aiTicTac.ai('easy',board)
+    aiOn = True
+else:
+    aiOn = False
+
+
+while (turn < nTurns and winner == 0):
+    print "Turn [%d/%d]" %(turn+1,nTurns)
+    player = (turn%2)+1
+    DrawBoard()
+
+    legalMove = False
+    while legalMove == False:
+        print "Player %d's turn:" %player
+        print "Where would you like to place your %d?"%player
+        if player == 1 or (player == 2 and aiOn == False):
+            m = raw_input()
+            move = np.array(map(int,m.split(',')))
+            move = move - 1 # shift input to correspond with array index
+        if player == 2 and aiOn == True:
+            move = ai.Move(board)
+        # Check if Move is allowed
+        if CheckMove(move) == True:
+            legalMove = True
+            board[move[0],move[1]] = player
+        elif CheckMove(move) == False:
+            legalMove = False
+    
+    winner = CheckWin()
+    if winner == 0:
+        turn += 1
+        continue
+    else:
+        print "Winner!"
+        print "Player %d Wins!"%winner
+        DrawBoard()
+    if turn == (nTurns-1):
+        print "Draw...."
+        DrawBoard()

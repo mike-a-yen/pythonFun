@@ -1,0 +1,22 @@
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.cross_validation import train_test_split
+
+input_csv = '11_Nov_11-06_Grades-PHYSICS_8A_-_LEC_001.csv'
+df = pd.read_csv(input_csv)
+
+predictors = ['Midterm Exam 1 (5958860)',
+            'Midterm Exam 2 (5958861)']
+target = ['Final Exam  (5972740)']
+features = ['Midterm Exam 1 (5958860)',
+            'Midterm Exam 2 (5958861)',
+            'Final Exam  (5972740)']
+
+
+train, test = train_test_split(df[features],
+                               train_size = 0.8,
+                               random_state=0)
+train, test = train.dropna(), test.dropna()
+
+clf = LinearRegression()
+clf.fit(train[predictors],train[target])

@@ -1,0 +1,32 @@
+class Animal:
+    def __init__(self,name,size=None,age=None):
+        self.name = name
+        self.size = size
+        self.age = age
+        self.type = None
+    def SetSize(self,size):
+        self.size = size
+    def SetAge(self,age):
+        self.age = age
+    def __str__(self):
+        return 'Name: %s \nAge: %s \nSize: %s' %(self.name,self.age,self.size)
+    def __repr__(self):
+        return self.__str__()
+   
+class Dog(Animal):
+    species = 'Dog'
+    def Sound(self):
+        return 'Woof'
+    def __str__(self):
+        return 'Type: Dog \nName: %s \nAge: %s \nSize: %s' %(self.name,self.age,self.size)
+    def __repr__(self):
+        return self.__str__()
+
+class Cat(Animal):
+    species = 'Cat'
+    def Sound(self):
+        return 'Meow'
+    def __str__(self):
+        return 'Type: Cat \nName: %s \nAge: %s \nSize: %s' %(self.name,self.age,self.size)
+    def __repr__(self):
+        return self.__str__()

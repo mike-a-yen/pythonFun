@@ -1,0 +1,13 @@
+import pandas as pd
+import sklearn as sk
+
+input_csv = '11_Nov_11-06_Grades-PHYSICS_8A_-_LEC_001.csv'
+df = pd.read_csv(input_csv)
+
+features = ['Midterm Exam 1 (5958860)',
+            'Midterm Exam 2 (5958861)',
+            'Final Exam  (5972740)']
+
+train, test = sk.cross_validation.train_test_split()
+
+clf = sk.linear_model.LinearRegression()

@@ -1,0 +1,29 @@
+# test the sub pixel algoirthm:
+# a small object whose size is
+# less than one pixel will be
+# shown on the image as one
+# pixel. If a multiple images
+# are taken at slightly different
+# offsets (x,y) it is possible to
+# resolve the small object to its
+# actual size
+
+import numpy as np
+
+# creat a fake image 375x500 pixels in RGB
+# values must be between zero and one
+# 1.0 = white 0.0 = black
+realImg = np.zeros((400,400,3))
+realImg[199:202,199:201,:]= 1.0
+
+# put pixArray on top of realImg and
+# average real pix values over pixArray
+# each pixArray entry is a 4x4 in realImg
+pixArray = np.zeros((100,100,3))
+for (x,y,z),value in np.ndenumerate(pixArray):
+    reals = realImg[x*4:x*4+4,y*4:y*4+4,:]
+    if np.average(reals) > 0:
+        print 'one'
+        pixArray[x,y,:] = 1.0
+
+    

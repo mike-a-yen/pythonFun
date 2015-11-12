@@ -1,0 +1,70 @@
+import numpy as np
+import string
+import copy
+
+alphabet = list(string.lowercase)
+f = open('/usr/share/dict/words')
+dictionary = f.read().splitlines()
+f.close()
+message = 'attack at dawn'
+message = message.replace(' ','').lower()
+key = 'do it now'
+key = key.replace(' ','').lower()
+
+def Encrypte(message,key):
+    message = message.replace(' ','')
+    cipherText = ''
+    for i,letter in enumerate(message):
+        isUpper = letter.isupper()
+        letterIndex = alphabet.index(letter.lower())
+        shift = alphabet.index(key[i%len(key)])
+        cipherText += alphabet[ (letterIndex+shift)%len(alphabet) ]
+    #print cipherText
+    return cipherText
+
+def Decrypte(cipherText, key):
+    key = key.lower()
+    message = ''
+    for i,letter in enumerate(cipherText):
+        isUpper = letter.isupper()
+        letterIndex = alphabet.index(letter)
+        shift = alphabet.index(key[i%len(key)])
+        message += alphabet[ (letterIndex-shift)%len(alphabet) ]
+    #print message
+    return message
+
+def CipherBreaker(cipherText,keyLength):
+    #assume single word message and key
+    for key in dictionary:
+        if len(key) != keyLength: continue
+        message = Decrypte(cipherText,key)
+        if message in dictionary:
+            print key
+            print message
+            
+def SubsetSum(target,lastPartition=[]):
+    # partition is a list of lists of the numbers 
+    # that add up to the target number
+    if target == 1:
+        return [[1]]
+    elif target > 1:
+        partition = SubsetSum(target-1)
+        nextPartition = copy.copy(partition)
+        print partition
+        for p,part in enumerate(partition):
+            print part
+            for i in xrange(len(part)):
+                temp = copy.copy(part)
+                temp[i] += 1
+                print temp
+                nextPartition.append(temp)
+            if part == [1]*(n-1):
+                nextPartition[p].append(1)
+        print nextPartition
+
+        return nextPartition
+        
+        
+                
+ct = Encrypte(message,key)
+mes = Decrypte(ct,key)
