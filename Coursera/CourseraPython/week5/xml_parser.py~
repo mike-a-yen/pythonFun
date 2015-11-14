@@ -1,0 +1,4 @@
+import urllib
+import xml.etree.ElementTree as ET
+
+serviceurl = 'http://pr4e.dr-chuck.com/tsugi/mod/python-data/data/comments_42.xml'
