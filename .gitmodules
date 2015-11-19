@@ -1,3 +1,0 @@
-[submodule "yelp-api"]
-	path = yelp-api
-	url = https://github.com/Yelp/yelp-api.git
