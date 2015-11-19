@@ -1,0 +1,18 @@
+import scipy.stats
+import numpy as np
+
+norm = scipy.stats.norm
+x = np.arange(0,100,0.1)
+mean = 30
+std = 4
+pdf = norm.pdf(x,mean,std)
+cdf = norm.cdf(x,mean,std)
+
+# x < 40
+print norm.cdf(40,mean,std)
+
+# x > 21
+print 1-norm.cdf(21,mean,std)
+
+# 30 < x < 35
+print norm.cdf(35,mean,std)-norm.cdf(30,mean,std)

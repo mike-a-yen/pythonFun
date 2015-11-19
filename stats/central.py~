@@ -1,0 +1,9 @@
+import numpy as np
+import pandas as pd
+
+dist = np.random.exponential(scale=10,50)
+
+sample_size = 10 # pick 10 from dist
+nSamples = 100 # repeat 100 times
+samples = pd.DataFrame([dist[np.random.randint(0,len(dist),sample_size)]
+                        for n in nSamples])

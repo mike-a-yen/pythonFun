@@ -1,0 +1,17 @@
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv('nesarc_pds.csv')
+dependent = 'S2AQ22'
+# HOW OFTEN DRANK 5+ DRINKS OF ANY ALCOHOL
+# DURING PERIOD OF HEAVIEST DRINKING
+independent = 'REGION'
+# Census Region
+# 1. Northeast
+# 2. Midwest
+# 3. South
+# 4. West
+
+x = df[independent]
+y = df[dependent]
+results = pd.DataFrame(df[independent], columns=[independent])
