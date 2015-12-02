@@ -1,0 +1,6 @@
+import urllib
+import json
+
+url = raw_input('Enter URL: ')
+html = urllib.urlopen(url).read()
+table = json.loads(html)

@@ -1,0 +1,30 @@
+'''
+This time I am looking at how the depth of
+a crater on mars is related to the longitude
+location of the crater.
+'''
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import itertools as it
+import matplotlib.pyplot as plt
+
+f_name = 'marscrater_pds.csv'
+#independent = 'LONGITUDE_CIRCLE_IMAGE'
+dependent = 'DIAM_CIRCLE_IMAGE'
+independent = 'DEPTH_RIMFLOOR_TOPOG'
+df = pd.read_csv(f_name,usecols=[independent,dependent])
+df = df.dropna()
+
+pr = stats.pearsonr(df[independent], df[dependent])
+print '='*30
+print 'Correlation Coefficient    p-value'
+print '_'*30
+print str(pr[0])+'        '+str(pr[1])
+print '='*30
+
+fig,ax = plt.subplots()
+ax.scatter(df[independent],df[dependent],edgecolor='none',alpha=0.1)
+ax.set_xlabel(independent)
+ax.set_ylabel(dependent)
+plt.show()
