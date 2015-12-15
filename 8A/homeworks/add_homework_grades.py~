@@ -1,0 +1,50 @@
+import pandas as pd
+import numpy as np
+
+grade_book = pd.read_csv('08_Dec_13-42_Grades-PHYSICS_8A_-_LEC_001.csv')
+homework_book = pd.read_csv('STAHLERPHY8AF15-20151208-Scores.csv',
+                            header=2,
+                            skip_footer=2)
+
+total_grade = homework_book.columns[-1]
+print total_grade
+possible = 887. # looked up from .csv
+homework_book['Total Percent'] = homework_book[total_grade]/possible
+
+# convert Mastering Physics grade to bCourse Grade
+out_of = 50. # 10% of total grade, half of a midterm
+grade_book['Homework'] = 0
+for i,student in grade_book.iterrows():
+    if student['Student'].strip()=='Points Possible':
+        grade_book.loc[i,('Homework',)] = out_of
+        continue
+    
+    sid = student['SIS User ID']
+    if np.isnan(sid):
+        print student
+        continue
+    
+    sid = str(int(sid))
+    # check if sid is in mastering physics
+    if sid not in homework_book['Student ID'].values:
+        # student not in mastering physics
+        print '='*30+' NOT PRESENT '+'='*30
+        print student
+        print '='*70
+        name = student['Student'].lower()
+        last, first = name.split(', ')[0], name.split(', ')[1].split()[0]
+        condition = (homework_book['Last Name'].apply(str.lower) == last &\
+                    homework_book['First Name'].apply(str.lower) == first)
+        homework_book.loc[condition]['Total Percent'].values.max()
+        continue
+    elif len(np.argwhere(sid == homework_book['Student ID'])) > 1:
+        # student in mastering physics more than once
+        print '*'*30+' DUPLICATE '+'*'*30
+        print student
+        print '*'*70
+       
+    hw_grade = homework_book.loc[homework_book['Student ID']==sid]['Total Percent'].values.max()
+    grade_book.loc[i,('Homework',)] = hw_grade*out_of
+
+print grade_book['Homework'].describe()
+grade_book.to_csv('08_Dec_13-42_Grades-PHYSICS_8A_-_LEC_001+1.csv',index=False)

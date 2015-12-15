@@ -1,0 +1,192 @@
+'''
+Compare if drinking status (current drinker, 
+ex-drinker, life abstainer) is related to 
+personal income, which is moderated by your 
+marital status (single,married). These are 
+all categorical variables, so a Chi2 test
+works best.
+'''
+import pandas as pd
+import numpy as np
+from scipy.stats import chi2_contingency as chi2
+#import statsmodels.formula.api as smf
+#from statsmodels.stats.multicomp import MultiComparison as mc
+import seaborn
+import itertools as it
+import matplotlib.pyplot as plt
+plt.close('all')
+
+income_map = {1:'Low',
+              2:'Medium',
+              3:'High'}
+# Income
+independent = 'S1Q10A'
+def income_level(value):
+    if value < 35000:
+        return 1
+    elif value < 70000:
+        return 2
+    elif value >= 70000:
+        return 3
+    elif not isinstance(row[independent],(int,float)):
+        raise ValueError('Did not get a number, can not convert. '\
+                         'Make sure to drop all NaNs before passing '\
+                         'to this function')
+
+#Current Marital Status
+# 1. Married
+# 2. Living with someone as if married
+# 3. Widowed
+# 4. Divorced
+# 5. Separated
+# 6. Never Married
+moderator = 'MARITAL'
+
+# 1. Current drinker
+# 2. Ex-drinker
+# 3. Lifetime Abstainer
+# for simplicity I will group Ex
+# consumer and never into one group
+dependent_map = {1:'Do Drink',
+                 0:'Dont Drink'}
+dependent = 'CONSUMER'
+
+data = pd.read_csv('nesarc_pds.csv',usecols=[independent, dependent, moderator])
+data[dependent] = data[dependent].map({1:1, 2:0, 3:0})
+# Since I only want married or single
+# I replace 1 and 2 with 0,
+# and 3-6 with 1
+# 0 depicts married
+# 1 depicts single
+recode = {1:0, 2:0, 3:1, 4:1, 5:1, 6:1}
+data[moderator] = data[moderator].map(recode)
+# categorize independent variable
+data['INCOME'] = data[independent].apply(income_level)
+# rename independent variable to the remapped column
+independent = 'INCOME'
+# set confidence limit at 0.05
+cl = 0.05
+
+# create crosstab to compare across all
+# independent variable values, this will
+# include both single and married
+ct = pd.crosstab(data[dependent],data[independent])
+results = chi2(ct)
+print '*'*12+' BOTH '+'*'*12
+print ct
+print '-'*30
+print 'Chi2: ',results[0]
+print 'p-value: ',results[1]
+print 'dof: ',results[2]
+print '-'*30
+if results[1] < cl: print independent+' and '+dependent+' are related'
+print '*'*30+'\n'
+# make histogram plot of independent vs dependent
+# this will include all data
+fig = seaborn.factorplot(x=independent, y=dependent,
+                   data=data,kind='bar',ci=None)
+plt.xlabel(independent)
+plt.ylabel(dependent)
+plt.title('All Data')
+fig.savefig(dependent+'_vs_'+independent+'_data.png')
+plt.show()
+plt.close('all')
+
+# subgroup data into married and single
+married = data[data[moderator] == 0]
+single = data[data[moderator] == 1]
+
+ct_married = pd.crosstab(married[dependent], married[independent])
+res_married = chi2(ct_married)
+print '*'*11+' MARRIED '+'*'*11
+print ct_married
+print '-'*30
+print 'Chi2: ',res_married[0]
+print 'p-value: ',res_married[1]
+print 'dof: ',res_married[2]
+print '-'*30
+if res_married[1] < cl: print independent+' and '+dependent+' are related for married'
+print '*'*30+'\n'
+fig = seaborn.factorplot(x=independent, y=dependent,
+                   data=married,kind='point',ci=None)
+plt.xlabel(independent)
+plt.ylabel(dependent)
+plt.title('Married Only')
+fig.savefig(dependent+'_vs_'+independent+'_married.png')
+plt.show()
+plt.close('all')
+
+ct_single = pd.crosstab(single[dependent], single[independent])
+res_single = chi2(ct_single)
+print '*'*12+' SINGLE '+'*'*12
+print ct_single
+print '-'*30
+print 'Chi2: ',res_single[0]
+print 'p-value: ',res_single[1]
+print 'dof: ',res_single[2]
+print '-'*30
+if res_single[1] < cl: print independent+' and '+dependent+' are related for single'
+print '*'*30+'\n'
+fig = seaborn.factorplot(x=independent, y=dependent,
+                   data=single,kind='point',ci=None)
+plt.xlabel(independent)
+plt.ylabel(dependent)
+plt.title('Single Only')
+fig.savefig(dependent+'_vs_'+independent+'_single.png')
+plt.show()
+plt.close('all')
+
+# get all permutations of length 2
+# of the independent variable
+# then get all permutations of that list
+# with the moderator
+combinations = list(it.combinations(ct,r=2))
+# get all possible moderator values
+# 0:Married data
+# 1:Single data
+# 2: All data
+mod_values = np.array([0,1,2])
+permutations = list(it.product(combinations,mod_values))
+
+print 'Adjusting for Bonferroni.....'
+print '='*40
+print '-'*40
+print 'limit p-value: ',cl/len(permutations)
+
+# initialize comparison table
+# this will be what I print at
+# the end to summarize the results
+comparison = pd.DataFrame(np.zeros([len(permutations),5]),
+                          columns = ['Income1', # income category
+                                     'Income2', # income category
+                                     'Moderator',
+                                     'p-value',
+                                     'reject'] )
+# complete chi2 comparison for all
+# permutations of independent variable
+for i,perm in enumerate(permutations):
+    if perm[1] == 1: # single
+        subset = single[np.in1d(single[independent],perm[0])]
+    elif perm[1] == 0: # married
+        subset = married[np.in1d(married[independent],perm[0])]
+    elif perm[1] == 2: # all data
+        subset = data[np.in1d(data[independent],perm[0])]
+    ct = pd.crosstab(subset[dependent],subset[independent])
+    results = chi2(ct)
+    pv = results[1]
+    comparison.loc[i]['Income1'] = perm[0][0]
+    comparison.loc[i]['Income2'] = perm[0][1]
+    comparison.loc[i]['Moderator'] = perm[1]
+    comparison.loc[i]['p-value'] = pv
+    if pv <= cl/len(permutations):
+        comparison.loc[i]['reject'] = True
+    else:
+        comparison.loc[i]['reject'] = False
+print '-'*40
+# convert region number code back to name
+comparison['Income1'] = comparison['Income1'].map(income_map)
+comparison['Income2'] = comparison['Income2'].map(income_map)
+comparison['Moderator'] = comparison['Moderator'].map({0:'Married',
+                                                       1:'Single',
+                                                       2:'All Data'})
+print comparison

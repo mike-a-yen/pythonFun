@@ -1,0 +1,8 @@
+from sklearn.datasets import load_iris
+from sklearn.externals.six import StringIO
+from sklearn import tree
+import numpy as np
+
+iris  = load_iris()
+clf = tree.DecisionTreeClassifier()
+

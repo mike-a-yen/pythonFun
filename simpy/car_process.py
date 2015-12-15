@@ -1,0 +1,30 @@
+import simpy
+
+class Car(object):
+    def __init__(self,env):
+        self.env = env
+        # start the run process everytime an
+        # instance is created.
+        self.action = env.process(self.run())
+        self.battery_life = 0
+
+    def run(self):
+        while True:
+            print 'Start parking and charging at %d' %env.now
+            charge_duration = 5
+            self.battery_life += charge_duration
+            print 'Battery Life: '+'#'*self.battery_life
+            yield env.process(self.charge(charge_duration))
+            
+            print 'Start driving at %d' %env.now
+            trip_duration = 2
+            self.battery_life -= trip_duration*2
+            print 'Battery Life: '+'#'*self.battery_life
+            yield env.timeout(trip_duration)
+
+    def charge(self,duration):
+        yield self.env.timeout(duration)
+
+env = simpy.Environment()
+car = Car(env)
+env.run(until=25)
