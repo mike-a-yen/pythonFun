@@ -13,7 +13,7 @@ class GradeTable(object):
     '''
     Tools to make grading easier for physics 8A
     '''
-    def __init__(self,path=None):
+    def __init__(self,path=None,section=None):
         '''
         open the .csv file containing grades
         '''
@@ -21,13 +21,16 @@ class GradeTable(object):
             self.grade_table = pd.read_csv(path)
         else:
             raise IOError('No such file or directory')
-
+        
         # replace all NaNs with 0
         self.grade_table.fillna(0, inplace=True)
         self.__clean_possible_points__()
         self.__clean_column_names__()
         self.__clean_columns__()
         self.columns = self.grade_table.columns
+
+        if section != None:
+            self.grade_table = self.__SelectSection__(int(section))
 
     def __clean_column_names__(self):
         '''
@@ -46,16 +49,17 @@ class GradeTable(object):
         '''
         self.grade_table['Section Number'] = self.grade_table['Section'].apply(\
                                                   GradeTable.__CleanSection__)
-        
-        is_num = lambda x: (re.search('^[0-9.]+',x) is not None)
+        is_num = lambda x: (re.search('^[0-9.-]+',x) is not None)
         object_columns = self.grade_table.select_dtypes(['object'])
 
         for col in object_columns.columns:
             object_columns[col] = object_columns[col].astype('str')
             contains_nums = object_columns[col][1:].apply(is_num)
             if np.all(contains_nums):
-                self.grade_table[col].astype('float')
-        
+                self.grade_table[col] = self.grade_table[col].astype(float)
+
+        self.grade_table['Section Number'] = self.grade_table['Section Number'].astype(int) 
+       
     @classmethod
     def __CleanSection__(cls,section):
         if isinstance(section,str):
@@ -107,19 +111,24 @@ class GradeTable(object):
             mask = (self.grade_table[name] > low) & (self.grade_table[name] < high)
             return self.grade_table[mask]
 
+    def __SelectSection__(self,section):
+        mask1 = (self.grade_table['Section Number'] == section)
+        mask2 = (self.grade_table['Student'] == '    Points Possible')
+        return self.grade_table[mask1 | mask2]
+
     def Mean(self,name):
-        return self.grade_table[name].mean()
+        return self.grade_table[name][1:].mean()
     def Median(self,name):
-        return self.grade_table[name].median()
+        return self.grade_table[name][1:].median()
     def Std(self,name):
-        return self.grade_table[name].std()
+        return self.grade_table[name][1:].std()
 
     def Histogram(self,name,bin_width=None,cuts=[1,2],title=None,color='blue',edge_color=None):
         outOf = self.PossiblePoints()[name][0]
         mean = self.Mean(name)
         median = self.Median(name)
         sigma = self.Std(name)
-        grades = self.SelectColumn(name)
+        grades = self.SelectColumn(name)[1:]
         
         if bin_width == None:
             if outOf <= 10:
@@ -147,10 +156,12 @@ class GradeTable(object):
         ax[0].text(mean,1.13*max(n),'$Mean$',color='black',rotation=270)
         # sigma lines
         for c in cuts:
-            ax[0].axvline(mean-c*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
-            ax[0].axvline(mean+c*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
-            ax[0].text(mean-c*sigma,1.13*max(n),'$%.1f \sigma$'%c,color='black',rotation=270)
-            ax[0].text(mean+c*sigma,1.13*max(n),'$%.1f \sigma$'%c,color='black',rotation=270)
+            if mean-c*sigma > 0:
+                ax[0].axvline(mean-c*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+                ax[0].text(mean-c*sigma,1.13*max(n),'$%.1f \sigma$'%c,color='black',rotation=270)
+            if mean+c*sigma < outOf:
+               ax[0].axvline(mean+c*sigma,color='y',linestyle='dashed',linewidth=2,alpha=0.75)
+               ax[0].text(mean+c*sigma,1.13*max(n),'$%.1f \sigma$'%c,color='black',rotation=270)
 
         # stats box
         ax[0].text(bins[0]+bin_width,0.9*max(n),
