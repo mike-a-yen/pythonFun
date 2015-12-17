@@ -1,0 +1,28 @@
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mc
+import math
+import argparse
+import re
+from ConfigParser import SafeConfigParser
+ColorConverter = mc.ColorConverter()
+
+class GradeTable(object):
+    '''
+    Tools to make grading easier for physics 8A
+    '''
+    def __init__(self,path=None):
+        '''
+        open the .csv file containing grades
+        '''
+        if os.path.exists(path):
+            self.grade_table = pd.read_csv(path)
+        else:
+            raise IOError('No such file or directory')
+
+        self.columns = self.grade_table.columns
+        
+        
+        
